@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { Gasto, Servicio } = require('../models'); // 👈 cambio acá
+const { gastoSchema } = require('../validators/gastoValidator');
 
 router.get('/completos', async (req, res) => {
   try {
@@ -58,6 +59,22 @@ router.get('/:año/:mes', async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).send('Error al obtener gastos por mes');
+  }
+});
+
+
+router.post('/', async (req, res) => {
+  const { error } = gastoSchema.validate(req.body);
+  if (error) {
+    return res.status(400).json({ error: error.details[0].message });
+  }
+
+  try {
+    const nuevoGasto = await Gasto.create(req.body);
+    res.status(201).json(nuevoGasto);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error al guardar el gasto');
   }
 });
 

@@ -2,6 +2,11 @@ const { DataTypes } = require('sequelize');
 const sequelize = require('../db');
 
 const Gasto = sequelize.define('Gasto', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true, // 👈 Esto hace la magia
+  },
   servicio_id: {
     type: DataTypes.INTEGER,
     allowNull: false
