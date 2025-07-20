@@ -1,8 +1,14 @@
 const express = require('express');
 const router = express.Router();
-const { Gasto, Servicio } = require('../models'); // 👈 cambio acá
+const { Gasto, Servicio } = require('../models');
 const { gastoSchema } = require('../validators/gastoValidator');
 
+
+// ==============================
+// 📥 GET - Obtener datos
+// ==============================
+
+// Obtener todos los gastos completos con nombre de servicio, ordenados por año y mes
 router.get('/completos', async (req, res) => {
   try {
     const gastos = await Gasto.findAll({
@@ -22,6 +28,7 @@ router.get('/completos', async (req, res) => {
   }
 });
 
+// Obtener gastos por año
 router.get('/:año', async (req, res) => {
   const año = parseInt(req.params.año);
   try {
@@ -42,6 +49,7 @@ router.get('/:año', async (req, res) => {
   }
 });
 
+// Obtener gastos por año y mes
 router.get('/:año/:mes', async (req, res) => {
   const año = parseInt(req.params.año);
   const mes = parseInt(req.params.mes);
@@ -63,6 +71,10 @@ router.get('/:año/:mes', async (req, res) => {
 });
 
 
+// ==============================
+// ➕ POST - Crear nuevo gasto
+// ==============================
+
 router.post('/', async (req, res) => {
   const { error } = gastoSchema.validate(req.body);
   if (error) {
@@ -75,6 +87,59 @@ router.post('/', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).send('Error al guardar el gasto');
+  }
+});
+
+
+// ==============================
+// ✏️ NUEVO: PUT - Actualizar gasto
+// ==============================
+
+/**
+ * Actualiza un gasto por su ID
+ * (¡Este método es nuevo! Aún no implementado)
+ */
+router.put('/:id', async (req, res) => {
+  // Aquí podrías validar con gastoSchema si querés
+  try {
+    const id = parseInt(req.params.id);
+    const [actualizados] = await Gasto.update(req.body, {
+      where: { id }
+    });
+
+    if (actualizados === 0) {
+      return res.status(404).send('Gasto no encontrado');
+    }
+
+    res.send('Gasto actualizado correctamente');
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error al actualizar el gasto');
+  }
+});
+
+
+// ==============================
+// ❌ NUEVO: DELETE - Eliminar gasto
+// ==============================
+
+/**
+ * Elimina un gasto por su ID
+ * (¡Este método es nuevo! Aún no implementado)
+ */
+router.delete('/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const eliminados = await Gasto.destroy({ where: { id } });
+
+    if (eliminados === 0) {
+      return res.status(404).send('Gasto no encontrado');
+    }
+
+    res.send('Gasto eliminado correctamente');
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error al eliminar el gasto');
   }
 });
 

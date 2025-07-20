@@ -5,6 +5,11 @@ const Gasto = require('../models/Gasto');
 const Servicio = require('../models/Servicio');
 const validarAñoParam = require('./../middlewares/validarAñoParam');
 
+//
+// ─── MÉTODOS GET (LECTURA DE DATOS) ─────────────────────────────────────────────
+//
+
+// Obtener totales anuales por servicio
 router.get('/anuales', async (req, res) => {
   try {
     const resultados = await Gasto.findAll({
@@ -34,6 +39,7 @@ router.get('/anuales', async (req, res) => {
   }
 });
 
+// Obtener totales por servicio en un año específico
 router.get('/por-servicio/:año', async (req, res) => {
   const año = parseInt(req.params.año);
   try {
@@ -63,8 +69,8 @@ router.get('/por-servicio/:año', async (req, res) => {
   }
 });
 
+// Obtener totales anuales globales (sin importar servicio)
 router.get('/globales-anuales', async (req, res) => {
-
   try {
     const resultados = await Gasto.findAll({
       attributes: [
@@ -87,8 +93,9 @@ router.get('/globales-anuales', async (req, res) => {
   }
 });
 
+// Obtener totales mensuales de un año específico
 router.get('/mensuales/:año', validarAñoParam, async (req, res) => {
-  const año = req.año; // ya validado y parseado
+  const año = req.año;
 
   try {
     const resultados = await Gasto.findAll({
@@ -110,6 +117,84 @@ router.get('/mensuales/:año', validarAñoParam, async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).send('Error al calcular totales mensuales');
+  }
+});
+
+
+//
+// ─── MÉTODOS POST, PUT, DELETE, PATCH (NUEVOS) ─────────────────────────────────
+//
+
+// Crear un nuevo gasto
+router.post('/gastos', async (req, res) => {
+  const { año, mes, importe, servicio_id } = req.body;
+
+  if (!año || !mes || !importe || !servicio_id) {
+    return res.status(400).json({ error: 'Faltan campos requeridos' });
+  }
+
+  try {
+    const nuevoGasto = await Gasto.create({ año, mes, importe, servicio_id });
+    res.status(201).json(nuevoGasto);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al crear el gasto' });
+  }
+});
+
+// Actualizar un gasto completo por ID
+router.put('/gastos/:id', async (req, res) => {
+  const { id } = req.params;
+  const { año, mes, importe, servicio_id } = req.body;
+
+  try {
+    const gasto = await Gasto.findByPk(id);
+    if (!gasto) {
+      return res.status(404).json({ error: 'Gasto no encontrado' });
+    }
+
+    await gasto.update({ año, mes, importe, servicio_id });
+    res.json(gasto);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al actualizar el gasto' });
+  }
+});
+
+// Eliminar un gasto por ID
+router.delete('/gastos/:id', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const gasto = await Gasto.findByPk(id);
+    if (!gasto) {
+      return res.status(404).json({ error: 'Gasto no encontrado' });
+    }
+
+    await gasto.destroy();
+    res.json({ mensaje: 'Gasto eliminado correctamente' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al eliminar el gasto' });
+  }
+});
+
+// Actualizar parcialmente un gasto (por ejemplo, solo el importe)
+router.patch('/gastos/:id', async (req, res) => {
+  const { id } = req.params;
+  const camposActualizables = req.body;
+
+  try {
+    const gasto = await Gasto.findByPk(id);
+    if (!gasto) {
+      return res.status(404).json({ error: 'Gasto no encontrado' });
+    }
+
+    await gasto.update(camposActualizables);
+    res.json(gasto);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al actualizar parcialmente el gasto' });
   }
 });
 
