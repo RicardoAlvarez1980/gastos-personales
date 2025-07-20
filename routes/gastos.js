@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { Gasto, Servicio } = require('../models');
 const { gastoSchema } = require('../validators/gastoValidator');
+const sequelize = require('../db');
 
 
 // ==============================
@@ -16,6 +17,7 @@ router.get('/completos', async (req, res) => {
       order: [['año', 'ASC'], ['mes', 'ASC']]
     });
     const respuesta = gastos.map(g => ({
+      id: g.id, // 👈 agregá esto
       servicio: g.Servicio.nombre,
       año: g.año,
       mes: g.mes,
@@ -60,6 +62,7 @@ router.get('/:año/:mes', async (req, res) => {
       order: [['servicio_id', 'ASC']]
     });
     const respuesta = gastos.map(g => ({
+            id: g.id, // 👈 agregá esto
       servicio: g.Servicio.nombre,
       importe: g.importe
     }));
@@ -70,6 +73,40 @@ router.get('/:año/:mes', async (req, res) => {
   }
 });
 
+// ==============================
+// 🔎 NUEVO: Obtener gasto por servicio, año y mes
+// ==============================
+
+router.get('/:año/:mes/servicio/:nombre', async (req, res) => {
+  const año = parseInt(req.params.año);
+  const mes = parseInt(req.params.mes);
+  const nombre = req.params.nombre.toLowerCase();
+
+  try {
+    const gastos = await Gasto.findAll({
+      where: { año, mes },
+      include: {
+        model: Servicio,
+        where: sequelize.where(
+          sequelize.fn('LOWER', sequelize.col('Servicio.nombre')),
+          nombre
+        ), // Filtra directamente por nombre del servicio
+        attributes: ['nombre']
+      }
+    });
+
+    if (gastos.length === 0) {
+      return res.status(404).send('No hay gastos para ese servicio en esa fecha');
+    }
+
+    const total = gastos.reduce((sum, g) => sum + g.importe, 0);
+
+    res.json({ año, mes, servicio: nombre, total });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error al obtener gasto por servicio');
+  }
+});
 
 // ==============================
 // ➕ POST - Crear nuevo gasto
@@ -142,5 +179,8 @@ router.delete('/:id', async (req, res) => {
     res.status(500).send('Error al eliminar el gasto');
   }
 });
+
+
+
 
 module.exports = router;

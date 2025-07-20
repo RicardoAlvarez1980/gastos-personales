@@ -93,7 +93,63 @@ router.get('/globales-anuales', async (req, res) => {
   }
 });
 
-// Obtener totales mensuales de un año específico
+// Obtener totales mensuales de un año específico (TOTAL DEL MES EN UN AÑO EN PARTICULAR)
+// EJEMPLO http://localhost:3000/totales/mensuales/2025 AÑO 2025
+/* 
+{
+"año": 2025,
+"totalesMensuales": [
+{
+"mes": 1,
+"total": 94821.96
+},
+{
+"mes": 2,
+"total": 117312.46
+},
+{
+"mes": 3,
+"total": 133361.62
+},
+{
+"mes": 4,
+"total": 189178.55
+},
+{
+"mes": 5,
+"total": 131476.27
+},
+{
+"mes": 6,
+"total": 185147.68
+},
+{
+"mes": 7,
+"total": 150046.15
+},
+{
+"mes": 8,
+"total": 71661.64
+},
+{
+"mes": 9,
+"total": 19079.57
+},
+{
+"mes": 10,
+"total": 19079.57
+},
+{
+"mes": 11,
+"total": 19079.57
+},
+{
+"mes": 12,
+"total": 19079.57
+}
+]
+}
+*/
 router.get('/mensuales/:año', validarAñoParam, async (req, res) => {
   const año = req.año;
 
@@ -197,5 +253,4 @@ router.patch('/gastos/:id', async (req, res) => {
     res.status(500).json({ error: 'Error al actualizar parcialmente el gasto' });
   }
 });
-
 module.exports = router;

@@ -1,3 +1,4 @@
+const sequelize = require('../db');
 const Gasto = require('./Gasto');
 const Servicio = require('./Servicio');
 
@@ -5,5 +6,4 @@ const Servicio = require('./Servicio');
 Servicio.hasMany(Gasto, { foreignKey: 'servicio_id' });
 Gasto.belongsTo(Servicio, { foreignKey: 'servicio_id' });
 
-module.exports = { Gasto, Servicio };
-    
+module.exports = { sequelize, Gasto, Servicio };    

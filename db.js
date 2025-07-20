@@ -1,4 +1,4 @@
-// db.js
+// db.jsconconst sequelize = require('../db');st sequelize = require('../db');
 const { Sequelize } = require('sequelize');
 require('dotenv').config();
 
