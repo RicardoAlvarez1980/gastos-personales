@@ -15,6 +15,7 @@ router.get('/anuales', async (req, res) => {
       ],
       include: {
         model: Servicio,
+        as: 'Servicio', // <--- tiene que coincidir con el alias de la asociación
         attributes: ['id', 'nombre']
       },
       group: [
@@ -42,8 +43,7 @@ router.get('/anuales', async (req, res) => {
   }
 });
 
-
-// GET /totales/globales-anuales - totales globales por año
+// GET /totales/globales-anuales - totales globales por año (no necesita include con alias)
 router.get('/globales-anuales', async (req, res) => {
   try {
     const resultados = await Gasto.findAll({
@@ -57,7 +57,7 @@ router.get('/globales-anuales', async (req, res) => {
     }));
     res.json(respuesta);
   } catch (error) {
-    console.error(error);
+    console.error('Error en /totales/globales-anuales:', error);
     res.status(500).send('Error al obtener totales globales anuales');
   }
 });
@@ -65,6 +65,10 @@ router.get('/globales-anuales', async (req, res) => {
 // GET /totales/mensuales/:año - totales mensuales para año dado
 router.get('/mensuales/:año', async (req, res) => {
   const año = parseInt(req.params.año);
+  if (isNaN(año)) {
+    return res.status(400).json({ error: 'Año inválido' });
+  }
+
   try {
     const resultados = await Gasto.findAll({
       where: { año },
@@ -72,13 +76,15 @@ router.get('/mensuales/:año', async (req, res) => {
       group: ['mes'],
       order: [['mes', 'ASC']]
     });
+
     const respuesta = resultados.map(r => ({
       mes: r.mes,
       total: parseFloat(r.get('total'))
     }));
+
     res.json({ año, totalesMensuales: respuesta });
   } catch (error) {
-    console.error(error);
+    console.error('Error en /totales/mensuales/:año:', error);
     res.status(500).send('Error al obtener totales mensuales');
   }
 });
