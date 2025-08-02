@@ -8,22 +8,40 @@ const router = express.Router();
 router.get('/anuales', async (req, res) => {
   try {
     const resultados = await Gasto.findAll({
-      attributes: ['año', 'servicio_id', [fn('SUM', col('importe')), 'total']],
-      include: { model: Servicio, attributes: ['id', 'nombre'] },
-      group: ['año', 'servicio_id', 'Servicio.id', 'Servicio.nombre'],
-      order: [['año', 'ASC'], ['servicio_id', 'ASC']]
+      attributes: [
+        'año',
+        'servicio_id',
+        [fn('SUM', col('importe')), 'total']
+      ],
+      include: {
+        model: Servicio,
+        attributes: ['id', 'nombre']
+      },
+      group: [
+        col('Gasto.año'),
+        col('Gasto.servicio_id'),
+        col('Servicio.id'),
+        col('Servicio.nombre')
+      ],
+      order: [
+        ['año', 'ASC'],
+        ['servicio_id', 'ASC']
+      ]
     });
+
     const respuesta = resultados.map(r => ({
-      servicio: r.Servicio.nombre,
+      servicio: r.Servicio?.nombre || null,
       año: r.año,
       total: parseFloat(r.dataValues.total)
     }));
+
     res.json(respuesta);
   } catch (error) {
-    console.error(error);
+    console.error('Error en /totales/anuales:', error);
     res.status(500).send('Error al obtener totales anuales');
   }
 });
+
 
 // GET /totales/globales-anuales - totales globales por año
 router.get('/globales-anuales', async (req, res) => {
