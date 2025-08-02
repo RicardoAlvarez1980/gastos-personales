@@ -43,7 +43,7 @@ router.get('/anuales', async (req, res) => {
   }
 });
 
-// GET /totales/globales-anuales - totales globales por año (no necesita include con alias)
+// GET /totales/globales-anuales - Total de Gastos año a año.
 router.get('/globales-anuales', async (req, res) => {
   try {
     const resultados = await Gasto.findAll({

@@ -13,7 +13,12 @@ async function validarGastoExistente(req, res, next) {
   next();
 }
 
-// GET /gastos?completo=true&año=2025&mes=4&servicio=agua
+/*
+GET /gastos trae todos y
+/gastos?año=2025&mes=4&servicio=agua el gasto de agua en mes 4 del año 2025
+/gastos  trae todos y /gastos?año=2025&mes=4 los gastos del mes 4 del año 2025
+*/ 
+
 router.get('/', async (req, res) => {
   const { completo, año, mes, servicio } = req.query;
   const where = {};
@@ -70,7 +75,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Obtener gastos por año Para cada año me da el total de gastos 
+// Obtener gastos por año gasto a gasto 
 router.get('/:año', async (req, res) => {
   const año = parseInt(req.params.año);
   try {
