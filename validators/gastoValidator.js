@@ -4,7 +4,7 @@ import Joi from 'joi';
 const currentYear = new Date().getFullYear();
 
 export const gastoSchema = Joi.object({
-  servicio_id: Joi.string().required(),
+  servicio_id: Joi.number().integer().min(1).required(),
   // Validación de servicio_id: debe ser un número entero positivo
   año: Joi.number()
     .integer()

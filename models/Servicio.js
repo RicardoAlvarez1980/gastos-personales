@@ -4,10 +4,10 @@ import { DataTypes } from 'sequelize';
 
 const Servicio = sequelize.define('Servicio', {
   id: {
-    type: DataTypes.BIGINT,
+    type: DataTypes.INTEGER,      // Cambié a INTEGER para ids chicos
     primaryKey: true,
-    defaultValue: sequelize.literal('unique_rowid()'),
     allowNull: false,
+    autoIncrement: false,         // Importante para que no auto-genere ids gigantes
   },
   nombre: {
     type: DataTypes.STRING(100),
