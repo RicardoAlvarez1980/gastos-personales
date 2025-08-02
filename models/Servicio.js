@@ -14,3 +14,4 @@ const Servicio = sequelize.define('Servicio', {
   tableName: 'servicios',
   timestamps: false,
 });
+export default Servicio;
