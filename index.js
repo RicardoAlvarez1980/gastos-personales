@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import sequelize from './db.js';
 import gastosRouter from './routes/gastos.js';
 import totalesRouter from './routes/totales.js';
+import serviciosRouter from './routes/servicios.js';
 
 dotenv.config();
 
@@ -25,6 +26,7 @@ app.get('/', async (req, res) => {
 
 app.use('/gastos', gastosRouter);
 app.use('/totales', totalesRouter);
+app.use('/servicios', serviciosRouter);
 
 // endpoint de setup: crea la base y sincroniza tablas
 app.get('/setup', async (req, res) => {
