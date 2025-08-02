@@ -1,4 +1,5 @@
-function validarAñoParam(req, res, next) {
+// middlewares/validarAñoParam.js
+export default function validarAñoParam(req, res, next) {
   const año = parseInt(req.params.año);
   if (isNaN(año)) {
     return res.status(400).json({ error: 'Parámetro año inválido' });
@@ -6,5 +7,3 @@ function validarAñoParam(req, res, next) {
   req.año = año; // guardamos el año parseado para usar directo
   next();
 }
-
-module.exports = validarAñoParam;

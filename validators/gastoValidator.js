@@ -1,8 +1,9 @@
 // validators/gastoValidator.js
-const Joi = require('joi');
+import Joi from 'joi';
+
 const currentYear = new Date().getFullYear();
 
-const gastoSchema = Joi.object({
+export const gastoSchema = Joi.object({
   servicio_id: Joi.number().integer().required(),
   año: Joi.number()
     .integer()
@@ -12,5 +13,3 @@ const gastoSchema = Joi.object({
   mes: Joi.number().integer().min(1).max(12).required(),
   importe: Joi.number().precision(2).required()
 });
-
-module.exports = { gastoSchema };

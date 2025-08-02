@@ -1,9 +1,8 @@
-const sequelize = require('../db');
-const Gasto = require('./Gasto');
-const Servicio = require('./Servicio');
+import Gasto from './Gasto.js';
+import Servicio from './Servicio.js';
 
-// 🔄 Relaciones
-Servicio.hasMany(Gasto, { foreignKey: 'servicio_id' });
-Gasto.belongsTo(Servicio, { foreignKey: 'servicio_id' });
+// Relaciones
+Gasto.belongsTo(Servicio, { as: 'Servicio', foreignKey: 'servicio_id' });
+Servicio.hasMany(Gasto, { as: 'Gastos', foreignKey: 'servicio_id' });
 
-module.exports = { sequelize, Gasto, Servicio };    
+export { Gasto, Servicio };

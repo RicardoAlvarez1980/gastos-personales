@@ -1,9 +1,9 @@
-const express = require('express');
-const router = express.Router();
-const { Gasto, Servicio } = require('../models');
-const { gastoSchema } = require('../validators/gastoValidator');
-const sequelize = require('../db');
+import express from 'express';
+import { Gasto, Servicio } from '../models/index.js';
+import { gastoSchema } from '../validators/gastoValidator.js';
+import sequelize from '../db.js';
 
+const router = express.Router();
 
 // ==============================
 // 📥 GET - Obtener datos
@@ -13,11 +13,11 @@ const sequelize = require('../db');
 router.get('/completos', async (req, res) => {
   try {
     const gastos = await Gasto.findAll({
-      include: { model: Servicio, attributes: ['nombre'] },
+      include: { model: Servicio, as: 'Servicio', attributes: ['nombre'] },
       order: [['año', 'ASC'], ['mes', 'ASC']]
     });
     const respuesta = gastos.map(g => ({
-      id: g.id, // 👈 agregá esto
+      id: g.id,
       servicio: g.Servicio.nombre,
       año: g.año,
       mes: g.mes,
@@ -36,7 +36,7 @@ router.get('/:año', async (req, res) => {
   try {
     const gastos = await Gasto.findAll({
       where: { año },
-      include: { model: Servicio, attributes: ['nombre'] },
+      include: { model: Servicio, as: 'Servicio', attributes: ['nombre'] },
       order: [['mes', 'ASC']]
     });
     const respuesta = gastos.map(g => ({
@@ -58,11 +58,11 @@ router.get('/:año/:mes', async (req, res) => {
   try {
     const gastos = await Gasto.findAll({
       where: { año, mes },
-      include: { model: Servicio, attributes: ['nombre'] },
+      include: { model: Servicio, as: 'Servicio', attributes: ['nombre'] },
       order: [['servicio_id', 'ASC']]
     });
     const respuesta = gastos.map(g => ({
-            id: g.id, // 👈 agregá esto
+      id: g.id,
       servicio: g.Servicio.nombre,
       importe: g.importe
     }));
@@ -73,10 +73,7 @@ router.get('/:año/:mes', async (req, res) => {
   }
 });
 
-// ==============================
-// 🔎 NUEVO: Obtener gasto por servicio, año y mes
-// ==============================
-
+// Obtener gasto por servicio, año y mes
 router.get('/:año/:mes/servicio/:nombre', async (req, res) => {
   const año = parseInt(req.params.año);
   const mes = parseInt(req.params.mes);
@@ -87,10 +84,11 @@ router.get('/:año/:mes/servicio/:nombre', async (req, res) => {
       where: { año, mes },
       include: {
         model: Servicio,
+        as: 'Servicio',
         where: sequelize.where(
           sequelize.fn('LOWER', sequelize.col('Servicio.nombre')),
           nombre
-        ), // Filtra directamente por nombre del servicio
+        ),
         attributes: ['nombre']
       }
     });
@@ -108,10 +106,7 @@ router.get('/:año/:mes/servicio/:nombre', async (req, res) => {
   }
 });
 
-// ==============================
 // ➕ POST - Crear nuevo gasto
-// ==============================
-
 router.post('/', async (req, res) => {
   const { error } = gastoSchema.validate(req.body);
   if (error) {
@@ -127,17 +122,8 @@ router.post('/', async (req, res) => {
   }
 });
 
-
-// ==============================
-// ✏️ NUEVO: PUT - Actualizar gasto
-// ==============================
-
-/**
- * Actualiza un gasto por su ID
- * (¡Este método es nuevo! Aún no implementado)
- */
+// ✏️ PUT - Actualizar gasto
 router.put('/:id', async (req, res) => {
-  // Aquí podrías validar con gastoSchema si querés
   try {
     const id = parseInt(req.params.id);
     const [actualizados] = await Gasto.update(req.body, {
@@ -155,15 +141,7 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-
-// ==============================
-// ❌ NUEVO: DELETE - Eliminar gasto
-// ==============================
-
-/**
- * Elimina un gasto por su ID
- * (¡Este método es nuevo! Aún no implementado)
- */
+// ❌ DELETE - Eliminar gasto
 router.delete('/:id', async (req, res) => {
   try {
     const id = parseInt(req.params.id);
@@ -180,7 +158,4 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-
-
-
-module.exports = router;
+export default router;

@@ -1,17 +1,26 @@
-// db.jsconconst sequelize = require('../db');st sequelize = require('../db');
-const { Sequelize } = require('sequelize');
-require('dotenv').config();
+import 'dotenv/config'; // carga .env automáticamente
+import { Sequelize } from 'sequelize';
 
-const sequelize = new Sequelize(process.env.DATABASE_URL, {
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString) {
+  throw new Error('La variable de entorno DATABASE_URL no está definida');
+}
+
+const sequelize = new Sequelize(connectionString, {
   dialect: 'postgres',
-  protocol: 'postgres',
-  logging: false,
   dialectOptions: {
     ssl: {
-      require: true,
-      rejectUnauthorized: false, // importante para no fallar en SSL auto-firmados
+      rejectUnauthorized: true,
     },
+    application_name: 'gastos-personales',
+  },
+  logging: false,
+  pool: {
+    max: 10,
+    idle: 30000,
+    acquire: 2000,
   },
 });
 
-module.exports = sequelize;
+export default sequelize;
+export { Sequelize };

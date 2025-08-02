@@ -1,13 +1,14 @@
-const express = require('express');
-const router = express.Router();
-const { fn, col } = require('sequelize');
-const Gasto = require('../models/Gasto');
-const Servicio = require('../models/Servicio');
-const validarAñoParam = require('./../middlewares/validarAñoParam');
+import express from 'express';
+import { fn, col, where, literal } from 'sequelize';
+import { Gasto, Servicio } from '../models/index.js';
+import validarAñoParam from '../middlewares/validarAñoParam.js';
+import sequelize from '../db.js';
 
-//
-// ─── MÉTODOS GET (LECTURA DE DATOS) ─────────────────────────────────────────────
-//
+const router = express.Router();
+
+// ==============================
+// MÉTODOS GET (LECTURA DE DATOS)
+// ==============================
 
 // Obtener totales anuales por servicio
 router.get('/anuales', async (req, res) => {
@@ -150,6 +151,8 @@ router.get('/globales-anuales', async (req, res) => {
 ]
 }
 */
+
+// Obtener totales mensuales de un año específico
 router.get('/mensuales/:año', validarAñoParam, async (req, res) => {
   const año = req.año;
 
@@ -176,10 +179,9 @@ router.get('/mensuales/:año', validarAñoParam, async (req, res) => {
   }
 });
 
-
-//
-// ─── MÉTODOS POST, PUT, DELETE, PATCH (NUEVOS) ─────────────────────────────────
-//
+// ==============================
+// POST / PUT / DELETE
+// ==============================
 
 // Crear un nuevo gasto
 router.post('/gastos', async (req, res) => {
@@ -235,7 +237,7 @@ router.delete('/gastos/:id', async (req, res) => {
   }
 });
 
-// Actualizar parcialmente un gasto (por ejemplo, solo el importe)
+// Actualizar parcialmente un gasto
 router.patch('/gastos/:id', async (req, res) => {
   const { id } = req.params;
   const camposActualizables = req.body;
@@ -253,4 +255,5 @@ router.patch('/gastos/:id', async (req, res) => {
     res.status(500).json({ error: 'Error al actualizar parcialmente el gasto' });
   }
 });
-module.exports = router;
+
+export default router;

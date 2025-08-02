@@ -1,31 +1,44 @@
-const { DataTypes } = require('sequelize');
-const sequelize = require('../db');
+// models/Gasto.js
+import sequelize from '../db.js';
+import { DataTypes } from 'sequelize';
+import Servicio from './Servicio.js';
 
 const Gasto = sequelize.define('Gasto', {
   id: {
-    type: DataTypes.INTEGER,
+    type: DataTypes.BIGINT,
     primaryKey: true,
-    autoIncrement: true, // 👈 Esto hace la magia
+    defaultValue: sequelize.literal('unique_rowid()'),
+    allowNull: false,
   },
   servicio_id: {
-    type: DataTypes.INTEGER,
-    allowNull: false
+    type: DataTypes.BIGINT,
+    allowNull: false,
   },
   año: {
     type: DataTypes.INTEGER,
-    allowNull: false
+    allowNull: false,
   },
   mes: {
     type: DataTypes.INTEGER,
-    allowNull: false
+    allowNull: false,
+    validate: {
+      min: 1,
+      max: 12,
+    },
   },
   importe: {
-    type: DataTypes.FLOAT,
-    allowNull: false
-  }
+    type: DataTypes.DECIMAL(10,2),
+    allowNull: false,
+  },
 }, {
   tableName: 'gastos',
-  timestamps: false
+  timestamps: false,
+  indexes: [
+    {
+      unique: true,
+      fields: ['servicio_id', 'año', 'mes'],
+    },
+  ],
 });
 
-module.exports = Gasto;
+export default Gasto;
