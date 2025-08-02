@@ -62,27 +62,6 @@ router.get('/globales-anuales', async (req, res) => {
   }
 });
 
-// Obtener gastos por año Para cada año me da el total de gastos 
-router.get('/:año', async (req, res) => {
-  const año = parseInt(req.params.año);
-  try {
-    const gastos = await Gasto.findAll({
-      where: { año },
-      include: { model: Servicio, as: 'Servicio', attributes: ['nombre'] },
-      order: [['mes', 'ASC']]
-    });
-    const respuesta = gastos.map(g => ({
-      servicio: g.Servicio.nombre,
-      mes: g.mes,
-      importe: g.importe
-    }));
-    res.json({ año, gastos: respuesta });
-  } catch (error) {
-    console.error(error);
-    res.status(500).send('Error al obtener gastos por año');
-  }
-});
-
 // GET /totales/mensuales/:año - totales mensuales para año dado
 router.get('/mensuales/:año', async (req, res) => {
   const año = parseInt(req.params.año);
