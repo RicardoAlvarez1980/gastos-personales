@@ -1,13 +1,9 @@
-// models/Servicio.js
-import sequelize from '../db.js';
-import { DataTypes } from 'sequelize';
-
 const Servicio = sequelize.define('Servicio', {
   id: {
-    type: DataTypes.INTEGER,      // Cambié a INTEGER para ids chicos
+    type: DataTypes.BIGINT,
     primaryKey: true,
+    autoIncrement: true, // Le decimos a Sequelize que la DB genera el ID
     allowNull: false,
-    autoIncrement: false,         // Importante para que no auto-genere ids gigantes
   },
   nombre: {
     type: DataTypes.STRING(100),
@@ -18,5 +14,3 @@ const Servicio = sequelize.define('Servicio', {
   tableName: 'servicios',
   timestamps: false,
 });
-
-export default Servicio;
