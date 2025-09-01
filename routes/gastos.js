@@ -1,100 +1,60 @@
 import express from 'express';
-import { Gasto, Servicio } from '../models/index.js';
-import sequelize from '../db.js';
+import { supabase } from '../db.js';
 import { gastoSchema } from '../validators/gastoValidator.js';
 
 const router = express.Router();
 
-// Middleware validación id gasto
-async function validarGastoExistente(req, res, next) {
-  const gasto = await Gasto.findByPk(req.params.id);
-  if (!gasto) return res.status(404).json({ error: 'Gasto no encontrado' });
-  req.gasto = gasto;
-  next();
-}
-
-/*
-GET /gastos trae todos y
-/gastos?año=2025&mes=4&servicio=agua el gasto de agua en mes 4 del año 2025
-/gastos  trae todos y /gastos?año=2025&mes=4 los gastos del mes 4 del año 2025
-*/ 
-
+// GET /gastos - filtrar por año, mes y/o servicio, opcionalmente completo
 router.get('/', async (req, res) => {
   const { completo, año, mes, servicio } = req.query;
-  const where = {};
-  if (año) where.año = parseInt(año);
-  if (mes) where.mes = parseInt(mes);
 
   try {
+    // Preparamos el query básico
+    let query = supabase.from('gastos').select(`
+      id,
+      año,
+      mes,
+      importe,
+      servicio_id,
+      servicios (nombre)
+    `);
+
+    if (año) query = query.eq('año', parseInt(año));
+    if (mes) query = query.eq('mes', parseInt(mes));
+    if (servicio) query = query.eq('servicios.nombre', servicio);
+
+    const { data: gastos, error } = await query.order('año', { ascending: true }).order('mes', { ascending: true });
+    if (error) throw error;
+
+    // Si se solicita "completo", retornamos nombre del servicio
     if (completo === 'true') {
-      const gastos = await Gasto.findAll({
-        include: { model: Servicio, as: 'Servicio', attributes: ['nombre'] },
-        order: [['año', 'ASC'], ['mes', 'ASC']]
-      });
-      const respuesta = gastos.map(g => ({
+      return res.json(
+        gastos.map(g => ({
+          id: g.id,
+          servicio: g.servicios.nombre,
+          año: g.año,
+          mes: g.mes,
+          importe: g.importe
+        }))
+      );
+    }
+
+    // Respuesta normal (solo id y servicio_id)
+    res.json(
+      gastos.map(g => ({
         id: g.id,
-        servicio: g.Servicio.nombre,
+        servicio_id: g.servicio_id,
         año: g.año,
         mes: g.mes,
         importe: g.importe
-      }));
-      return res.json(respuesta);
-    }
-
-    let include = { model: Servicio, as: 'Servicio', attributes: ['nombre'] };
-    if (servicio) {
-      include = {
-        model: Servicio,
-        as: 'Servicio',
-        where: sequelize.where(
-          sequelize.fn('LOWER', sequelize.col('Servicio.nombre')),
-          servicio.toLowerCase()
-        ),
-        attributes: ['nombre']
-      };
-    }
-
-    const gastos = await Gasto.findAll({
-      where,
-      include,
-      order: [['año', 'ASC'], ['mes', 'ASC']]
-    });
-
-    const respuesta = gastos.map(g => ({
-      id: g.id,
-      servicio: g.Servicio.nombre,
-      año: g.año,
-      mes: g.mes,
-      importe: g.importe
-    }));
-
-    res.json(respuesta);
+      }))
+    );
   } catch (error) {
     console.error(error);
     res.status(500).send('Error al obtener gastos');
   }
 });
 
-// Obtener gastos por año gasto a gasto 
-router.get('/:año', async (req, res) => {
-  const año = parseInt(req.params.año);
-  try {
-    const gastos = await Gasto.findAll({
-      where: { año },
-      include: { model: Servicio, as: 'Servicio', attributes: ['nombre'] },
-      order: [['mes', 'ASC']]
-    });
-    const respuesta = gastos.map(g => ({
-      servicio: g.Servicio.nombre,
-      mes: g.mes,
-      importe: g.importe
-    }));
-    res.json({ año, gastos: respuesta });
-  } catch (error) {
-    console.error(error);
-    res.status(500).send('Error al obtener gastos por año');
-  }
-});
 
 // POST /gastos - Crear gasto
 router.post('/', async (req, res) => {
@@ -102,7 +62,13 @@ router.post('/', async (req, res) => {
   if (error) return res.status(400).json({ error: error.details[0].message });
 
   try {
-    const nuevoGasto = await Gasto.create(req.body);
+    const { data: nuevoGasto, error } = await supabase
+      .from('gastos')
+      .insert([req.body])
+      .select()
+      .single();
+
+    if (error) throw error;
     res.status(201).json(nuevoGasto);
   } catch (error) {
     console.error(error);
@@ -110,32 +76,39 @@ router.post('/', async (req, res) => {
   }
 });
 
-// PUT /gastos/:id - Actualizar gasto completo
-router.put('/:id', validarGastoExistente, async (req, res) => {
+// PUT /gastos/:id - Actualizar gasto
+router.put('/:id', async (req, res) => {
+  const id = parseInt(req.params.id);
+
   try {
-    await req.gasto.update(req.body);
-    res.json(req.gasto);
+    const { data: gasto, error } = await supabase
+      .from('gastos')
+      .update(req.body)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error || !gasto) return res.status(404).send('Gasto no encontrado');
+    res.json(gasto);
   } catch (error) {
     console.error(error);
     res.status(500).send('Error al actualizar gasto');
   }
 });
 
-// PATCH /gastos/:id - Actualizar parcialmente
-router.patch('/:id', validarGastoExistente, async (req, res) => {
-  try {
-    await req.gasto.update(req.body);
-    res.json(req.gasto);
-  } catch (error) {
-    console.error(error);
-    res.status(500).send('Error al actualizar parcialmente gasto');
-  }
-});
-
 // DELETE /gastos/:id - Eliminar gasto
-router.delete('/:id', validarGastoExistente, async (req, res) => {
+router.delete('/:id', async (req, res) => {
+  const id = parseInt(req.params.id);
+
   try {
-    await req.gasto.destroy();
+    const { data: gasto, error } = await supabase
+      .from('gastos')
+      .delete()
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error || !gasto) return res.status(404).send('Gasto no encontrado');
     res.json({ mensaje: 'Gasto eliminado correctamente' });
   } catch (error) {
     console.error(error);
