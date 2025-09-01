@@ -9,7 +9,6 @@ router.get('/', async (req, res) => {
   const { completo, año, mes, servicio } = req.query;
 
   try {
-    // Preparamos el query básico
     let query = supabase.from('gastos').select(`
       id,
       año,
@@ -23,10 +22,11 @@ router.get('/', async (req, res) => {
     if (mes) query = query.eq('mes', parseInt(mes));
     if (servicio) query = query.eq('servicios.nombre', servicio);
 
-    const { data: gastos, error } = await query.order('año', { ascending: true }).order('mes', { ascending: true });
+    const { data: gastos, error } = await query
+      .order('año', { ascending: true })
+      .order('mes', { ascending: true });
     if (error) throw error;
 
-    // Si se solicita "completo", retornamos nombre del servicio
     if (completo === 'true') {
       return res.json(
         gastos.map(g => ({
@@ -39,7 +39,6 @@ router.get('/', async (req, res) => {
       );
     }
 
-    // Respuesta normal (solo id y servicio_id)
     res.json(
       gastos.map(g => ({
         id: g.id,
@@ -51,10 +50,9 @@ router.get('/', async (req, res) => {
     );
   } catch (error) {
     console.error(error);
-    res.status(500).send('Error al obtener gastos');
+    res.status(500).json({ error: 'Error al obtener gastos', detalle: error.message });
   }
 });
-
 
 // POST /gastos - Crear gasto
 router.post('/', async (req, res) => {
@@ -70,9 +68,9 @@ router.post('/', async (req, res) => {
 
     if (error) throw error;
     res.status(201).json(nuevoGasto);
-  } catch (error) {
-    console.error(error);
-    res.status(500).send('Error al crear gasto');
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error al crear gasto', detalle: err.message });
   }
 });
 
@@ -88,11 +86,11 @@ router.put('/:id', async (req, res) => {
       .select()
       .single();
 
-    if (error || !gasto) return res.status(404).send('Gasto no encontrado');
+    if (error || !gasto) return res.status(404).json({ error: 'Gasto no encontrado' });
     res.json(gasto);
-  } catch (error) {
-    console.error(error);
-    res.status(500).send('Error al actualizar gasto');
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error al actualizar gasto', detalle: err.message });
   }
 });
 
@@ -108,11 +106,11 @@ router.delete('/:id', async (req, res) => {
       .select()
       .single();
 
-    if (error || !gasto) return res.status(404).send('Gasto no encontrado');
+    if (error || !gasto) return res.status(404).json({ error: 'Gasto no encontrado' });
     res.json({ mensaje: 'Gasto eliminado correctamente' });
-  } catch (error) {
-    console.error(error);
-    res.status(500).send('Error al eliminar gasto');
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error al eliminar gasto', detalle: err.message });
   }
 });
 

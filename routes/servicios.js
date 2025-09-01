@@ -12,7 +12,7 @@ router.get('/', async (req, res) => {
       .order('nombre', { ascending: true });
 
     if (error) throw error;
-    res.json(servicios.map(s => s.nombre));
+    res.json(servicios);
   } catch (error) {
     console.error(error);
     res.status(500).send('Error al obtener servicios');

@@ -12,70 +12,51 @@ const toNumber = (val) => {
 const round2 = (num) => Math.round(num * 100) / 100;
 
 // -----------------------------
-// GET /totales/anuales
+// GET /totales/anuales (por servicio)
 // -----------------------------
 router.get('/anuales', async (req, res) => {
   try {
-    const { data: servicios, error: errorServicios } = await supabase
-      .from('servicios')
-      .select('id, nombre');
-    if (errorServicios) throw errorServicios;
+    const { data, error } = await supabase.rpc('totales_anuales_servicios');
+    if (error) throw error;
 
-    const { data: gastos, error: errorGastos } = await supabase
-      .from('gastos')
-      .select('año, importe, servicio_id');
-    if (errorGastos) throw errorGastos;
-
+    // Convertimos a objeto por año
     const resultado = {};
-    gastos.forEach((g) => {
-      const año = g.año;
-      if (!resultado[año]) {
-        resultado[año] = {};
-        servicios.forEach((s) => (resultado[año][s.nombre] = 0));
-      }
-      const servicio = servicios.find((s) => s.id === g.servicio_id)?.nombre;
-      if (servicio) resultado[año][servicio] += toNumber(g.importe);
-    });
-
-    Object.keys(resultado).forEach((año) => {
-      servicios.forEach((s) => {
-        if (!(s.nombre in resultado[año])) resultado[año][s.nombre] = 0;
-        resultado[año][s.nombre] = round2(resultado[año][s.nombre]);
-      });
+    data.forEach(row => {
+      if (!resultado[row.año]) resultado[row.año] = {};
+      resultado[row.año][row.servicio] = parseFloat(row.total);
     });
 
     res.json(resultado);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Error al obtener totales por año y servicio', detalle: error.message });
+    res.status(500).json({ error: 'Error al obtener totales anuales por servicio', detalle: error.message });
   }
 });
 
+
 // -----------------------------
 // GET /totales/globales-anuales
+// Todos los años 2015-2026 aunque no tengan gastos
 // -----------------------------
 router.get('/globales-anuales', async (req, res) => {
   try {
-    const { data: gastos, error } = await supabase
-      .from('gastos')
-      .select('año, importe');
+    // Llamamos a la función SQL totales_globales()
+    const { data, error } = await supabase.rpc('totales_globales');
     if (error) throw error;
 
-    const resultado = {};
-    gastos.forEach((g) => {
-      const año = g.año;
-      if (!resultado[año]) resultado[año] = 0;
-      resultado[año] += toNumber(g.importe);
-    });
+    // Redondeamos totales
+    const resultado = data.map((row) => ({
+      año: row.año,
+      total: round2(row.total)
+    }));
 
-    const lista = Object.keys(resultado)
-      .map((año) => ({ año: parseInt(año), total: round2(resultado[año]) }))
-      .sort((a, b) => a.año - b.año);
-
-    res.json(lista);
+    res.json(resultado);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Error al obtener totales globales anuales', detalle: error.message });
+    res.status(500).json({
+      error: 'Error al obtener totales globales anuales',
+      detalle: error.message
+    });
   }
 });
 
@@ -129,9 +110,7 @@ router.get('/mensuales/:año', async (req, res) => {
 
 // -----------------------------
 // GET /totales/mensuales-todos
-// Totales mensuales de todos los años (2015-2026)
 // -----------------------------
-
 router.get('/mensuales-todos', async (req, res) => {
   try {
     const { data: servicios, error: errorServicios } = await supabase
