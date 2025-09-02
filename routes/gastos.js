@@ -4,13 +4,20 @@ import { gastoSchema } from '../validators/gastoValidator.js';
 
 const router = express.Router();
 
-// GET /gastos - filtrar por año, mes y/o servicio, opcionalmente completo
-// GET /gastos - trae todo sin límite de filas
-// GET /gastos - trae todo hasta 5000 registros
-router.get('/', async (req, res) => {
-  const { completo, año, mes, servicio } = req.query;
+const toNumber = (val) => {
+  const num = parseFloat(val);
+  return isNaN(num) ? 0 : num;
+};
 
-  try {
+// Función helper para traer todos los registros en "chunks"
+async function getAllGastos({ año, mes, servicio }) {
+  const chunkSize = 1000; // límite de Supabase por request
+  let from = 0;
+  let to = chunkSize - 1;
+  let allGastos = [];
+  let more = true;
+
+  while (more) {
     let query = supabase
       .from('gastos')
       .select(`
@@ -18,40 +25,42 @@ router.get('/', async (req, res) => {
         año,
         mes,
         importe,
-        servicio_id,
         servicios (nombre)
-      `, { count: 'exact' }) // también devuelve el total
+      `)
       .order('año', { ascending: true })
       .order('mes', { ascending: true })
-      .range(0, 9999); // del 0 al 9999
+      .range(from, to);
 
     if (año) query = query.eq('año', parseInt(año));
     if (mes) query = query.eq('mes', parseInt(mes));
     if (servicio) query = query.eq('servicios.nombre', servicio);
 
-    const { data: gastos, error, count } = await query;
+    const { data, error } = await query;
     if (error) throw error;
 
-    const datos = (completo === 'true')
-      ? gastos.map(g => ({
-          id: g.id,
-          servicio: g.servicios.nombre,
-          año: g.año,
-          mes: g.mes,
-          importe: g.importe
-        }))
-      : gastos.map(g => ({
-          id: g.id,
-          servicio_id: g.servicio_id,
-          año: g.año,
-          mes: g.mes,
-          importe: g.importe
-        }));
+    allGastos = allGastos.concat(data);
+    more = data.length === chunkSize;
+    from += chunkSize;
+    to += chunkSize;
+  }
 
-    res.json({
-      total: count,
-      gastos: datos
-    });
+  // Siempre devolvemos el nombre del servicio
+  return allGastos.map(g => ({
+    id: g.id,
+    servicio: g.servicios.nombre,
+    año: g.año,
+    mes: g.mes,
+    importe: toNumber(g.importe)
+  }));
+}
+
+// GET /gastos - filtrar por año, mes y/o servicio
+router.get('/', async (req, res) => {
+  const { año, mes, servicio } = req.query;
+
+  try {
+    const gastos = await getAllGastos({ año, mes, servicio });
+    res.json({ total: gastos.length, gastos });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Error al obtener gastos', detalle: error.message });
