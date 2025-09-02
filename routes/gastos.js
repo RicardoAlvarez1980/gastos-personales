@@ -5,8 +5,57 @@ import { gastoSchema } from '../validators/gastoValidator.js';
 const router = express.Router();
 
 // GET /gastos - filtrar por año, mes y/o servicio, opcionalmente completo
-// GET /gastos - con paginación y filtros
+// GET /gastos - trae todo sin límite de filas
 router.get('/', async (req, res) => {
+  const { completo, año, mes, servicio } = req.query;
+
+  try {
+    let query = supabase
+      .from('gastos')
+      .select(`
+        id,
+        año,
+        mes,
+        importe,
+        servicio_id,
+        servicios (nombre)
+      `)
+      .order('año', { ascending: true })
+      .order('mes', { ascending: true });
+
+    if (año) query = query.eq('año', parseInt(año));
+    if (mes) query = query.eq('mes', parseInt(mes));
+    if (servicio) query = query.eq('servicios.nombre', servicio);
+
+    const { data: gastos, error } = await query;
+    if (error) throw error;
+
+    const datos = (completo === 'true')
+      ? gastos.map(g => ({
+          id: g.id,
+          servicio: g.servicios.nombre,
+          año: g.año,
+          mes: g.mes,
+          importe: g.importe
+        }))
+      : gastos.map(g => ({
+          id: g.id,
+          servicio_id: g.servicio_id,
+          año: g.año,
+          mes: g.mes,
+          importe: g.importe
+        }));
+
+    res.json(datos);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al obtener gastos', detalle: error.message });
+  }
+});
+
+
+// GET /gastos/filtrados - con paginación + filtros
+router.get('/filtrados', async (req, res) => {
   const { completo, año, mes, servicio, pagina = 1, limite = 100 } = req.query;
 
   try {
@@ -22,7 +71,7 @@ router.get('/', async (req, res) => {
         importe,
         servicio_id,
         servicios (nombre)
-      `, { count: 'exact' }) // cuenta total de filas
+      `, { count: 'exact' })
       .order('año', { ascending: true })
       .order('mes', { ascending: true })
       .range(desde, hasta);
@@ -34,7 +83,6 @@ router.get('/', async (req, res) => {
     const { data: gastos, error, count } = await query;
     if (error) throw error;
 
-    // Si pide "completo" devolvemos el nombre del servicio
     const datos = (completo === 'true')
       ? gastos.map(g => ({
           id: g.id,
@@ -52,17 +100,16 @@ router.get('/', async (req, res) => {
         }));
 
     res.json({
-      total: count,          // total de registros en la tabla
+      total: count,
       pagina: parseInt(pagina),
       limite: parseInt(limite),
       gastos: datos
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Error al obtener gastos', detalle: error.message });
+    res.status(500).json({ error: 'Error al obtener gastos filtrados', detalle: error.message });
   }
 });
-
 
 // POST /gastos - Crear gasto
 router.post('/', async (req, res) => {
