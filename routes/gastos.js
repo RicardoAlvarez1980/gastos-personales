@@ -6,6 +6,7 @@ const router = express.Router();
 
 // GET /gastos - filtrar por año, mes y/o servicio, opcionalmente completo
 // GET /gastos - trae todo sin límite de filas
+// GET /gastos - trae todo hasta 5000 registros
 router.get('/', async (req, res) => {
   const { completo, año, mes, servicio } = req.query;
 
@@ -19,15 +20,16 @@ router.get('/', async (req, res) => {
         importe,
         servicio_id,
         servicios (nombre)
-      `)
+      `, { count: 'exact' }) // también devuelve el total
       .order('año', { ascending: true })
-      .order('mes', { ascending: true });
+      .order('mes', { ascending: true })
+      .range(0, 9999); // del 0 al 9999
 
     if (año) query = query.eq('año', parseInt(año));
     if (mes) query = query.eq('mes', parseInt(mes));
     if (servicio) query = query.eq('servicios.nombre', servicio);
 
-    const { data: gastos, error } = await query;
+    const { data: gastos, error, count } = await query;
     if (error) throw error;
 
     const datos = (completo === 'true')
@@ -46,7 +48,10 @@ router.get('/', async (req, res) => {
           importe: g.importe
         }));
 
-    res.json(datos);
+    res.json({
+      total: count,
+      gastos: datos
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Error al obtener gastos', detalle: error.message });
