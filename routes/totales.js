@@ -111,67 +111,16 @@ router.get('/mensuales/:año', async (req, res) => {
 // -----------------------------
 // GET /totales/mensuales-todos
 // -----------------------------
+// GET /totales/mensuales-todos
 router.get('/mensuales-todos', async (req, res) => {
   try {
-    const { data: servicios, error: errorServicios } = await supabase
-      .from('servicios')
-      .select('id, nombre');
-    if (errorServicios) throw errorServicios;
+    const { data: rows, error } = await supabase.rpc('totales_mensuales_todos');
+    if (error) throw error;
 
-    const { data: gastos, error: errorGastos } = await supabase
-      .from('gastos')
-      .select('año, mes, servicio_id, importe');
-    if (errorGastos) throw errorGastos;
-
-    // Obtener años existentes
-    const añosExistentes = [...new Set(gastos.map(g => g.año))];
-
-    const resultado = {};
-
-    // Inicializar años y meses solo de los años existentes
-    añosExistentes.forEach(año => {
-      resultado[año] = {};
-      for (let m = 1; m <= 12; m++) {
-        resultado[año][m] = {};
-        servicios.forEach(s => (resultado[año][m][s.nombre] = 0));
-      }
-    });
-
-    // Sumar gastos
-    gastos.forEach(g => {
-      const año = g.año;
-      const mes = g.mes;
-      const servicio = servicios.find(s => s.id === g.servicio_id)?.nombre;
-      if (servicio && resultado[año]) {
-        resultado[año][mes][servicio] += Number(g.importe);
-      }
-    });
-
-    // Construir lista final
-    const lista = Object.keys(resultado)
-      .sort((a, b) => a - b)
-      .map(año => {
-        const meses = Object.keys(resultado[año])
-          .sort((a, b) => a - b)
-          .map(mes => {
-            const totalPorServicio = {};
-            let totalMensual = 0;
-            Object.keys(resultado[año][mes]).forEach(s => {
-              totalPorServicio[s] = parseFloat(resultado[año][mes][s].toFixed(2));
-              totalMensual += resultado[año][mes][s];
-            });
-            return { mes: parseInt(mes), totalPorServicio, totalMensual: parseFloat(totalMensual.toFixed(2)) };
-          });
-        return { año: parseInt(año), meses };
-      });
-
-    res.json(lista);
+    res.json(rows);
   } catch (error) {
     console.error(error);
-    res.status(500).json({
-      error: 'Error al obtener totales mensuales de todos los años',
-      detalle: error.message,
-    });
+    res.status(500).json({ error: 'Error al obtener totales', detalle: error.message });
   }
 });
 
