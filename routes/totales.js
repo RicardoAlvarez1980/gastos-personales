@@ -123,41 +123,44 @@ router.get('/mensuales-todos', async (req, res) => {
       .select('año, mes, servicio_id, importe');
     if (errorGastos) throw errorGastos;
 
+    // Obtener años existentes
+    const añosExistentes = [...new Set(gastos.map(g => g.año))];
+
     const resultado = {};
 
-    // Inicializar todos los años y meses
-    for (let año = 2015; año <= 2026; año++) {
+    // Inicializar años y meses solo de los años existentes
+    añosExistentes.forEach(año => {
       resultado[año] = {};
       for (let m = 1; m <= 12; m++) {
         resultado[año][m] = {};
-        servicios.forEach((s) => (resultado[año][m][s.nombre] = 0));
+        servicios.forEach(s => (resultado[año][m][s.nombre] = 0));
       }
-    }
+    });
 
-    // Sumar gastos existentes
-    gastos.forEach((g) => {
+    // Sumar gastos
+    gastos.forEach(g => {
       const año = g.año;
       const mes = g.mes;
-      const servicio = servicios.find((s) => s.id === g.servicio_id)?.nombre;
-      if (servicio) {
-        resultado[año][mes][servicio] += toNumber(g.importe);
+      const servicio = servicios.find(s => s.id === g.servicio_id)?.nombre;
+      if (servicio && resultado[año]) {
+        resultado[año][mes][servicio] += Number(g.importe);
       }
     });
 
     // Construir lista final
     const lista = Object.keys(resultado)
       .sort((a, b) => a - b)
-      .map((año) => {
+      .map(año => {
         const meses = Object.keys(resultado[año])
           .sort((a, b) => a - b)
-          .map((mes) => {
+          .map(mes => {
             const totalPorServicio = {};
             let totalMensual = 0;
-            Object.keys(resultado[año][mes]).forEach((s) => {
-              totalPorServicio[s] = round2(resultado[año][mes][s]);
+            Object.keys(resultado[año][mes]).forEach(s => {
+              totalPorServicio[s] = parseFloat(resultado[año][mes][s].toFixed(2));
               totalMensual += resultado[año][mes][s];
             });
-            return { mes: parseInt(mes), totalPorServicio, totalMensual: round2(totalMensual) };
+            return { mes: parseInt(mes), totalPorServicio, totalMensual: parseFloat(totalMensual.toFixed(2)) };
           });
         return { año: parseInt(año), meses };
       });
@@ -171,5 +174,6 @@ router.get('/mensuales-todos', async (req, res) => {
     });
   }
 });
+
 
 export default router;
